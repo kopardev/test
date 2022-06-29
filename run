@@ -49,7 +49,7 @@ ${SCRIPTBASENAME}
 --> run <Your Pipeline Short Name>
 
 USAGE:
-  bash ${SCRIPTNAME} -m/--runmode=<RUNMODE> -w/--workdir=<WORKDIR>
+  bash ${SCRIPTNAME} -m/--runmode=<RUNMODE> -w/--workdir=<WORKDIR> -f/--fastqdir=<FASTQDIR>
 Required Arguments:
 1.  RUNMODE: [Type: String] Valid options:
     *) init : initialize workdir
@@ -59,6 +59,7 @@ Required Arguments:
     *) unlock : unlock workdir if locked by snakemake
     *) runlocal : run without submitting to sbatch
 2.  WORKDIR: [Type: String]: Absolute or relative path to the output folder with write permissions.
+3.  FASTQDIR: [Type: String]: Absolute or relative path to the fastq files.
 EOF
 }
 
@@ -90,7 +91,7 @@ if [ -d $WORKDIR ];then err "Folder $WORKDIR already exists!"; fi
 mkdir -p $WORKDIR
 
 # copy config and samples files
-sed -e "s/PIPELINE_HOME/${PIPELINE_HOME//\//\\/}/g" -e "s/WORKDIR/${WORKDIR//\//\\/}/g" ${PIPELINE_HOME}/config/config.yaml > $WORKDIR/config.yaml
+sed -e "s/PIPELINE_HOME/${PIPELINE_HOME//\//\\/}/g" -e "s/WORKDIR/${WORKDIR//\//\\/}/g" -e "s/FASTQDIR/${FASTQDIR//\//\\/}/g" ${PIPELINE_HOME}/config/config.yaml > $WORKDIR/config.yaml
 cp ${PIPELINE_HOME}/config/samples.tsv $WORKDIR/
 
 #create log and stats folders
@@ -277,7 +278,7 @@ snakemake $1 -s $SNAKEFILE \
 --printshellcmds \
 --latency-wait 120 \
 --configfile ${WORKDIR}/config.yaml \
---cluster-config ${PIPELINE_HOME}/config/cluster.json \
+--cluster-config ${PIPELINE_HOME}/resources/cluster.json \
 --cluster "sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} -t {cluster.time} --mem {cluster.mem} --job-name {cluster.name} --output {cluster.output} --error {cluster.error}" \
 -j 500 \
 --rerun-incomplete \
@@ -314,6 +315,9 @@ function main(){
       -w=*|--workdir=*)
         WORKDIR="${i#*=}"
       ;;
+      -f=*|--fastqdir=*)
+        FASTQDIR="${i#*=}"
+      ;;
       *)
         err "Unknown argument!"    # unknown option
       ;;
@@ -321,6 +325,7 @@ function main(){
   done
   WORKDIR=$(readlink -f "$WORKDIR")
   echo "Working Dir: $WORKDIR"
+  FASTQDIR=$(readlink -f "$FASTQDIR")
 
   case $RUNMODE in
     init) init && exit 0;;
