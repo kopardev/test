@@ -1,0 +1,27 @@
+from os.path import join
+#########################################################
+# IMPORT PYTHON LIBRARIES HERE
+#########################################################
+import sys
+import os
+import pandas as pd
+import yaml
+import pprint
+import shutil
+import uuid
+# import glob
+# import shutil
+pp = pprint.PrettyPrinter(indent=4)
+#########################################################
+
+SAMPLES = ['a','b']
+
+WORKDIR = config['workdir']
+
+rule all:
+    input:
+        expand(join(WORKDIR,'fastqc','{sample}_fastqc.html'),sample=SAMPLES),
+
+include: join(PIPELINE_HOME,"workflow","rules","fastqc.smk")
+
+
